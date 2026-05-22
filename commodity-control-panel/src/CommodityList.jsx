@@ -1,57 +1,37 @@
-import React, { useState, useEffect } from 'react'
-import {
-    Button,
-    InputField,
-    SingleSelectField,
-    SingleSelectOption,
-    DataTable,
-    DataTableHead,
-    DataTableBody,
-    DataTableRow,
-    DataTableCell,
-    DataTableColumnHeader,
-    Tag,
-    Pagination,
-    NoticeBox,
-    IconAdd16,
-    IconDownload16,
-    IconEdit16,
-    IconLock16,
-    IconLockOpen16,
-    IconDelete16,
-} from '@dhis2/ui'
-import { COMMODITY_GROUPS, describeCron } from './data.js'
+/* CommodityList — list view of commodity configurations
+ * Search + group/status filters + DataTable + actions. */
 
-export default function CommodityList({ items, onAdd, onEdit, onView, onToggleActive, onDelete }) {
-    const [q, setQ] = useState('')
-    const [group, setGroup] = useState('')
-    const [status, setStatus] = useState('')
-    const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(10)
+const CommodityList = ({ items, onAdd, onEdit, onToggleActive, onDelete, onView }) => {
+    const [q, setQ] = React.useState('');
+    const [group, setGroup] = React.useState('all');
+    const [status, setStatus] = React.useState('all');
+    const [page, setPage] = React.useState(1);
+    const [pageSize, setPageSize] = React.useState(10);
 
     const filtered = items.filter(c => {
-        if (q && !`${c.code} ${c.name}`.toLowerCase().includes(q.toLowerCase())) return false
-        if (group && c.group !== group) return false
-        if (status === 'active' && !c.active) return false
-        if (status === 'inactive' && c.active) return false
-        return true
-    })
+        if (q && !`${c.code} ${c.name}`.toLowerCase().includes(q.toLowerCase())) return false;
+        if (group !== 'all' && c.group !== group) return false;
+        if (status === 'active' && !c.active) return false;
+        if (status === 'inactive' && c.active) return false;
+        return true;
+    });
 
-    const total = filtered.length
-    const totalPages = Math.max(1, Math.ceil(total / pageSize))
-    const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize)
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const start = (page - 1) * pageSize;
+    const pageRows = filtered.slice(start, start + pageSize);
 
-    useEffect(() => { setPage(1) }, [q, group, status, pageSize])
+    React.useEffect(() => { setPage(1); }, [q, group, status, pageSize]);
 
     const groupOptions = [
-        { value: '', label: 'All groups' },
+        { value: 'all', label: 'All groups' },
         ...COMMODITY_GROUPS.map(g => ({ value: g.value, label: g.value })),
-    ]
+    ];
     const statusOptions = [
-        { value: '',         label: 'All statuses' },
+        { value: 'all',      label: 'All statuses' },
         { value: 'active',   label: 'Active only' },
         { value: 'inactive', label: 'Inactive only' },
-    ]
+    ];
 
     return (
         <div>
@@ -60,162 +40,123 @@ export default function CommodityList({ items, onAdd, onEdit, onView, onToggleAc
                     <p className="breadcrumb">Commodity Control / Commodity configurations</p>
                     <h1>Commodity configurations</h1>
                     <p className="lede">
-                        Define how each commodity's stock and consumption data are pulled, transformed,
-                        and synced from facility data sets into the central LMIS warehouse.
+                        Define how each commodity's stock and consumption data are pulled, transformed, and synced
+                        from facility data sets into the central LMIS warehouse.
                     </p>
                 </div>
-                <div className="ph-actions">
-                    <Button icon={<IconDownload16 />}>Export</Button>
-                    <Button primary icon={<IconAdd16 />} onClick={onAdd}>Add configuration</Button>
+                <div className="actions">
+                    <Button variant="primary" icon="add" iconColor="white" onClick={onAdd}>
+                        Add configuration
+                    </Button>
                 </div>
             </div>
 
             <div className="filter-bar">
-                <div className="filter-search">
-                    <InputField
-                        dense
-                        label="Search"
+                <div className="search">
+                    <span className="field-label">Search</span>
+                    <Input
+                        compact
                         value={q}
-                        onChange={({ value }) => setQ(value)}
+                        onChange={e => setQ(e.target.value)}
+                        prefixIcon="search"
                         placeholder="Search by name or code…"
                     />
                 </div>
-                <div className="filter-field">
-                    <SingleSelectField
-                        dense
-                        label="Group"
-                        selected={group}
-                        onChange={({ selected }) => setGroup(selected)}
-                    >
-                        {groupOptions.map(o => (
-                            <SingleSelectOption key={o.value} label={o.label} value={o.value} />
-                        ))}
-                    </SingleSelectField>
+                <div className="compact-field">
+                    <span className="field-label">Group</span>
+                    <Select compact value={group} onChange={e => setGroup(e.target.value)} options={groupOptions} />
                 </div>
-                <div className="filter-field">
-                    <SingleSelectField
-                        dense
-                        label="Status"
-                        selected={status}
-                        onChange={({ selected }) => setStatus(selected)}
-                    >
-                        {statusOptions.map(o => (
-                            <SingleSelectOption key={o.value} label={o.label} value={o.value} />
-                        ))}
-                    </SingleSelectField>
+                <div className="compact-field">
+                    <span className="field-label">Status</span>
+                    <Select compact value={status} onChange={e => setStatus(e.target.value)} options={statusOptions} />
                 </div>
-                <div className="filter-meta">
+                <div className="meta">
                     Showing <strong>{total}</strong> of {items.length} configurations
                 </div>
             </div>
 
-            <div className="table-container">
-                <DataTable>
-                    <DataTableHead>
-                        <DataTableRow>
-                            <DataTableColumnHeader>Commodity</DataTableColumnHeader>
-                            <DataTableColumnHeader>Group</DataTableColumnHeader>
-                            <DataTableColumnHeader>Ordering period</DataTableColumnHeader>
-                            <DataTableColumnHeader>Sync interval</DataTableColumnHeader>
-                            <DataTableColumnHeader align="center">Workflows</DataTableColumnHeader>
-                            <DataTableColumnHeader>Status</DataTableColumnHeader>
-                            <DataTableColumnHeader align="right">Actions</DataTableColumnHeader>
-                        </DataTableRow>
-                    </DataTableHead>
-                    <DataTableBody>
+            <div className="tbl-wrap">
+                <table className="dhis2-table">
+                    <thead>
+                        <tr>
+                            <th>Commodity</th>
+                            <th>Group</th>
+                            <th>Ordering period</th>
+                            <th>Sync interval</th>
+                            <th className="center">Workflows</th>
+                            <th>Status</th>
+                            <th style={{ width: 1, textAlign: 'right' }}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {pageRows.length === 0 ? (
-                            <DataTableRow>
-                                <DataTableCell colSpan="7">
+                            <tr>
+                                <td colSpan={7} style={{ padding: 0 }}>
                                     <div className="empty-state" style={{ boxShadow: 'none', borderRadius: 0 }}>
+                                        <Icon name="search" size={24} color="muted" />
                                         <h2>No configurations match your filters</h2>
                                         <p>Try clearing the search term, or pick a different group / status.</p>
-                                        <Button onClick={() => { setQ(''); setGroup(''); setStatus('') }}>
-                                            Clear filters
-                                        </Button>
+                                        <Button onClick={() => { setQ(''); setGroup('all'); setStatus('all'); }}>Clear filters</Button>
                                     </div>
-                                </DataTableCell>
-                            </DataTableRow>
+                                </td>
+                            </tr>
                         ) : pageRows.map(c => (
-                            <DataTableRow
-                                key={c.id}
-                                className="clickable-row"
-                                onClick={() => onView(c)}
-                            >
-                                <DataTableCell>
+                            <tr key={c.id} className="clickable" onClick={() => onView(c)}>
+                                <td>
                                     <div className="row-stack">
                                         <span className="primary">{c.name}</span>
                                         <span className="secondary">{c.code}</span>
                                     </div>
-                                </DataTableCell>
-                                <DataTableCell>
-                                    <Tag>{c.group}</Tag>
-                                </DataTableCell>
-                                <DataTableCell>
-                                    {c.orderingPeriod} {c.orderingPeriodType}
-                                </DataTableCell>
-                                <DataTableCell>
-                                    <span
-                                        className="mono"
-                                        style={{ fontSize: 12.5, color: 'var(--grey-800)' }}
-                                        title={describeCron(c.syncInterval).text}
-                                    >
-                                        {c.syncInterval}
-                                    </span>
-                                </DataTableCell>
-                                <DataTableCell align="center">
+                                </td>
+                                <td><Tag>{c.group}</Tag></td>
+                                <td>{c.orderingPeriod} {c.orderingPeriodType}</td>
+                                <td className="mono" title={describeCron(c.syncInterval).text}>{c.syncInterval}</td>
+                                <td className="center">
                                     <span style={{
-                                        display: 'inline-block', minWidth: 22, padding: '2px 8px',
-                                        borderRadius: 10, background: 'var(--grey-200)',
-                                        color: 'var(--grey-800)', fontSize: 12, fontWeight: 500,
-                                    }}>
-                                        {c.workflows.length}
-                                    </span>
-                                </DataTableCell>
-                                <DataTableCell>
+                                        display: 'inline-block', minWidth: 22,
+                                        padding: '2px 8px', borderRadius: 10,
+                                        background: 'var(--grey-200)', color: 'var(--grey-800)',
+                                        fontSize: 12, fontWeight: 500,
+                                    }}>{c.workflows.length}</span>
+                                </td>
+                                <td>
                                     {c.active
-                                        ? <Tag positive bold>Active</Tag>
+                                        ? <Tag variant="positive" bold>Active</Tag>
                                         : <Tag>Inactive</Tag>
                                     }
-                                </DataTableCell>
-                                <DataTableCell
-                                    align="right"
-                                    onClick={e => e.stopPropagation()}
-                                >
-                                    <div className="row-actions">
+                                </td>
+                                <td className="actions" onClick={e => e.stopPropagation()}>
+                                    <div className="row">
                                         <button className="row-icon-btn" title="Edit" onClick={() => onEdit(c)}>
-                                            <IconEdit16 />
+                                            <Icon name="edit" size={16} color="muted" />
                                         </button>
                                         <button
                                             className="row-icon-btn"
                                             title={c.active ? 'Deactivate' : 'Activate'}
                                             onClick={() => onToggleActive(c)}
                                         >
-                                            {c.active ? <IconLock16 /> : <IconLockOpen16 />}
+                                            <Icon name={c.active ? 'lock' : 'checkmark'} size={16} color="muted" />
                                         </button>
                                         <button
                                             className="row-icon-btn destructive"
                                             title="Delete"
                                             onClick={() => onDelete(c)}
                                         >
-                                            <IconDelete16 />
+                                            <Icon name="delete" size={16} color="red" />
                                         </button>
                                     </div>
-                                </DataTableCell>
-                            </DataTableRow>
+                                </td>
+                            </tr>
                         ))}
-                    </DataTableBody>
-                </DataTable>
-
+                    </tbody>
+                </table>
                 <Pagination
-                    page={page}
-                    pageCount={totalPages}
-                    total={total}
-                    pageSize={pageSize}
-                    pageSizeSet={[10, 25, 50, 100]}
-                    onPageChange={setPage}
-                    onPageSizeChange={({ pageSize: ps }) => setPageSize(ps)}
+                    page={page} totalPages={totalPages} pageSize={pageSize} total={total}
+                    onPage={setPage} onPageSize={setPageSize}
                 />
             </div>
         </div>
-    )
-}
+    );
+};
+
+window.CommodityList = CommodityList;

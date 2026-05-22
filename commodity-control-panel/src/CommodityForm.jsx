@@ -1,37 +1,5 @@
-import React, { useState } from 'react'
-import {
-    Button,
-    ButtonStrip,
-    InputField,
-    SingleSelectField,
-    SingleSelectOption,
-    MultiSelectField,
-    MultiSelectOption,
-    Transfer,
-    SwitchField,
-    TabBar,
-    Tab,
-    Modal,
-    ModalTitle,
-    ModalContent,
-    ModalActions,
-    NoticeBox,
-    IconAdd16,
-    IconSave16,
-    IconDelete16,
-    IconClock16,
-} from '@dhis2/ui'
-import {
-    COMMODITY_GROUPS,
-    PERIOD_TYPES,
-    ORDERING_PERIODS,
-    RULE_TYPES,
-    RECIPIENT_GROUPS,
-    DATA_SOURCES,
-    DATASETS,
-    describeCron,
-    newId,
-} from './data.js'
+/* CommodityForm — create/edit commodity configuration modal.
+ * Sections: Basic Info, Recipient Groups, Workflows (tabbed, each with rules). */
 
 const emptyWorkflow = (idx = 1) => ({
     id: newId('w'),
@@ -45,7 +13,7 @@ const emptyWorkflow = (idx = 1) => ({
     removeAndComplement: false,
     aggregationType: 'SUM',
     rules: [],
-})
+});
 
 const emptyCommodity = () => ({
     id: null,
@@ -58,379 +26,344 @@ const emptyCommodity = () => ({
     active: true,
     recipientGroups: [],
     workflows: [emptyWorkflow(1)],
-})
+});
 
-export default function CommodityForm({ initial, onClose, onSave }) {
-    const [form, setForm] = useState(() =>
-        initial ? JSON.parse(JSON.stringify(initial)) : emptyCommodity()
-    )
-    const [activeWf, setActiveWf] = useState(form.workflows[0]?.id)
-    const [errors, setErrors] = useState({})
-    const [saving, setSaving] = useState(false)
+const CommodityForm = ({ initial, onClose, onSave }) => {
+    const [form, setForm] = React.useState(() => initial
+        ? JSON.parse(JSON.stringify(initial))
+        : emptyCommodity()
+    );
+    const [activeWf, setActiveWf] = React.useState(form.workflows[0]?.id);
+    const [errors, setErrors] = React.useState({});
+    const [saving, setSaving] = React.useState(false);
 
-    const set = patch => setForm(f => ({ ...f, ...patch }))
-    const cron = describeCron(form.syncInterval)
+    const set = (patch) => setForm(f => ({ ...f, ...patch }));
+    const cron = describeCron(form.syncInterval);
 
-    const currentWf = form.workflows.find(w => w.id === activeWf)
+    /* ---- Workflow editors ---- */
+    const currentWfIdx = form.workflows.findIndex(w => w.id === activeWf);
+    const currentWf = form.workflows[currentWfIdx];
 
-    const updateWf = patch => {
+    const updateWf = (patch) => {
         setForm(f => ({
             ...f,
             workflows: f.workflows.map(w => w.id === activeWf ? { ...w, ...patch } : w),
-        }))
-    }
+        }));
+    };
 
     const addWorkflow = () => {
-        const nw = emptyWorkflow(form.workflows.length + 1)
-        setForm(f => ({ ...f, workflows: [...f.workflows, nw] }))
-        setActiveWf(nw.id)
-    }
+        const nw = emptyWorkflow(form.workflows.length + 1);
+        setForm(f => ({ ...f, workflows: [...f.workflows, nw] }));
+        setActiveWf(nw.id);
+    };
 
-    const removeWorkflow = id => {
-        if (form.workflows.length === 1) return
+    const removeWorkflow = (id) => {
+        if (form.workflows.length === 1) return; // keep at least one
         setForm(f => {
-            const next = f.workflows.filter(w => w.id !== id)
-            if (id === activeWf) setActiveWf(next[0].id)
-            return { ...f, workflows: next }
-        })
-    }
+            const next = f.workflows.filter(w => w.id !== id);
+            if (id === activeWf) setActiveWf(next[0].id);
+            return { ...f, workflows: next };
+        });
+    };
 
-    const addRule = () => updateWf({
-        rules: [...currentWf.rules, { id: newId('r'), type: 'ASSIGNED_TO_DATASET', datasets: [] }],
-    })
+    /* ---- Rules ---- */
+    const addRule = () => {
+        updateWf({
+            rules: [...currentWf.rules, { id: newId('r'), type: 'ASSIGNED_TO_DATASET', datasets: [] }],
+        });
+    };
+    const updateRule = (rid, patch) => {
+        updateWf({
+            rules: currentWf.rules.map(r => r.id === rid ? { ...r, ...patch } : r),
+        });
+    };
+    const removeRule = (rid) => {
+        updateWf({ rules: currentWf.rules.filter(r => r.id !== rid) });
+    };
 
-    const updateRule = (rid, patch) => updateWf({
-        rules: currentWf.rules.map(r => r.id === rid ? { ...r, ...patch } : r),
-    })
-
-    const removeRule = rid => updateWf({ rules: currentWf.rules.filter(r => r.id !== rid) })
-
+    /* ---- Validate + save ---- */
     const validate = () => {
-        const e = {}
-        if (!form.code.trim()) e.code = 'Commodity code is required'
-        if (!form.name.trim()) e.name = 'Commodity name is required'
-        if (!cron.ok) e.syncInterval = cron.text
-        if (!form.orderingPeriod || form.orderingPeriod < 1) e.orderingPeriod = 'Must be at least 1'
-        if (form.recipientGroups.length === 0) e.recipientGroups = 'Select at least one recipient group'
-        form.workflows.forEach(w => {
-            if (w.dataSources.length === 0) e[`wf-${w.id}-ds`] = `Workflow "${w.name}" needs at least one data source`
-        })
-        return e
-    }
+        const e = {};
+        if (!form.code.trim()) e.code = 'Commodity code is required';
+        if (!form.name.trim()) e.name = 'Commodity name is required';
+        if (!cron.ok) e.syncInterval = cron.text;
+        if (!form.orderingPeriod || form.orderingPeriod < 1) e.orderingPeriod = 'Ordering period must be at least 1';
+        if (form.recipientGroups.length === 0) e.recipientGroups = 'Select at least one recipient group';
+        form.workflows.forEach((w, idx) => {
+            if (w.dataSources.length === 0) e[`wf-${w.id}-ds`] = `Workflow "${w.name}" needs at least one data source`;
+        });
+        return e;
+    };
 
     const submit = () => {
-        const e = validate()
-        setErrors(e)
+        const e = validate();
+        setErrors(e);
         if (Object.keys(e).length > 0) {
-            const firstWfErr = Object.keys(e).find(k => k.startsWith('wf-'))
-            if (firstWfErr) setActiveWf(firstWfErr.split('-')[1])
-            return
+            // jump to first workflow with errors
+            const firstWfErr = Object.keys(e).find(k => k.startsWith('wf-'));
+            if (firstWfErr) setActiveWf(firstWfErr.split('-')[1]);
+            return;
         }
-        setSaving(true)
-        setTimeout(() => { onSave(form); setSaving(false) }, 450)
-    }
+        setSaving(true);
+        setTimeout(() => {
+            onSave(form);
+            setSaving(false);
+        }, 450); // simulate async
+    };
 
-    const groupOptions = COMMODITY_GROUPS.map(g => ({ value: g.value, label: g.label }))
-    const recipientOptions = RECIPIENT_GROUPS.map(g => ({ value: g.value, label: g.label }))
+    const periodTypeOptions = PERIOD_TYPES;
+    const orderingOptions = ORDERING_PERIODS;
+    const groupOptions = COMMODITY_GROUPS.map(g => ({ value: g.value, label: g.label }));
 
     return (
-        <Modal large onClose={onClose}>
-            <ModalTitle>
-                {initial ? `Edit configuration — ${initial.code}` : 'New commodity configuration'}
-                {initial && (
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--grey-600)', fontWeight: 400 }}>
-                        {initial.name}
-                    </p>
-                )}
-            </ModalTitle>
-
-            <ModalContent>
-                {Object.keys(errors).length > 0 && (
-                    <div style={{ marginBottom: 18 }}>
-                        <NoticeBox error title="Some fields need your attention">
-                            <ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
-                                {Object.values(errors).map((m, i) => <li key={i}>{m}</li>)}
-                            </ul>
-                        </NoticeBox>
-                    </div>
-                )}
-
-                {/* ── Section A: Basic Info ── */}
-                <div className="form-section">
-                    <h3 className="section-heading">
-                        Basic information
-                        <span className="hint">Identifiers, scheduling, and ordering cadence</span>
-                    </h3>
-                    <div className="form-grid">
-                        <InputField
-                            label="Commodity code"
-                            required
-                            value={form.code}
-                            onChange={({ value }) => set({ code: value.toUpperCase() })}
-                            placeholder="e.g. 89LATY78"
-                            error={!!errors.code}
-                            validationText={errors.code}
-                            helpText="Short identifier — letters, digits and hyphens."
-                        />
-                        <InputField
-                            label="Commodity name"
-                            required
-                            value={form.name}
-                            onChange={({ value }) => set({ name: value })}
-                            placeholder="e.g. Amoxicillin 500mg capsules"
-                            error={!!errors.name}
-                            validationText={errors.name}
-                        />
-                        <SingleSelectField
-                            label="Commodity group"
-                            required
-                            selected={form.group}
-                            onChange={({ selected }) => set({ group: selected })}
-                        >
-                            {groupOptions.map(o => (
-                                <SingleSelectOption key={o.value} label={o.label} value={o.value} />
-                            ))}
-                        </SingleSelectField>
-
-                        <div>
-                            <InputField
-                                label="Synchronization interval"
-                                required
-                                value={form.syncInterval}
-                                onChange={({ value }) => set({ syncInterval: value })}
-                                placeholder="0 0 * * 1"
-                                error={!cron.ok}
-                                validationText={!cron.ok ? cron.text : undefined}
-                                helpText="Standard 5-field cron expression in UTC."
-                                inputWidth="100%"
-                            />
-                            <div className={`cron-preview ${cron.ok ? '' : 'invalid'}`}>
-                                <IconClock16 />
-                                <span className="cron-label">{cron.ok ? 'Runs' : 'Invalid'}:</span>
-                                <span>{cron.text}</span>
-                            </div>
-                        </div>
-
-                        <SingleSelectField
-                            label="Ordering period type"
-                            required
-                            selected={form.orderingPeriodType}
-                            onChange={({ selected }) => set({ orderingPeriodType: selected })}
-                        >
-                            {ORDERING_PERIODS.map(o => (
-                                <SingleSelectOption key={o.value} label={o.label} value={o.value} />
-                            ))}
-                        </SingleSelectField>
-                        <InputField
-                            label="Ordering period"
-                            required
-                            type="number"
-                            value={String(form.orderingPeriod)}
-                            onChange={({ value }) => set({ orderingPeriod: parseInt(value) || 0 })}
-                            error={!!errors.orderingPeriod}
-                            validationText={errors.orderingPeriod}
-                            helpText={`Number of ${form.orderingPeriodType.toLowerCase()}s between orders.`}
-                        />
-                    </div>
-                </div>
-
-                {/* ── Section B: Recipient Groups ── */}
-                <div className="form-section">
-                    <h3 className="section-heading">
-                        Recipient groups
-                        <span className="hint">User groups that receive alerts when this configuration runs</span>
-                    </h3>
-                    {errors.recipientGroups && (
-                        <p style={{ color: 'var(--red-700)', fontSize: 12, margin: '0 0 8px' }}>
-                            {errors.recipientGroups}
-                        </p>
-                    )}
-                    <Transfer
-                        options={recipientOptions}
-                        selected={form.recipientGroups}
-                        onChange={({ selected }) => set({ recipientGroups: selected })}
-                        leftHeader={<span style={{ fontWeight: 500 }}>Available groups</span>}
-                        rightHeader={<span style={{ fontWeight: 500 }}>Selected groups</span>}
-                        filterable
-                        filterPlaceholder="Filter groups…"
-                        height="280px"
-                    />
-                </div>
-
-                {/* ── Section C: Workflows ── */}
-                <div className="form-section">
-                    <h3 className="section-heading">
-                        Workflows
-                        <span className="hint">Each workflow pulls one slice of data on this configuration's schedule</span>
-                    </h3>
-                    <TabBar>
-                        {form.workflows.map(w => (
-                            <Tab
-                                key={w.id}
-                                selected={activeWf === w.id}
-                                onClick={() => setActiveWf(w.id)}
-                            >
-                                {w.name}
-                                {form.workflows.length > 1 && (
-                                    <span
-                                        onClick={e => { e.stopPropagation(); removeWorkflow(w.id) }}
-                                        style={{
-                                            marginLeft: 6, cursor: 'pointer', fontSize: 14,
-                                            width: 16, height: 16, borderRadius: '50%',
-                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                        }}
-                                        title="Remove workflow"
-                                    >×</span>
-                                )}
-                            </Tab>
-                        ))}
-                        <Tab onClick={addWorkflow}>
-                            + Add workflow
-                        </Tab>
-                    </TabBar>
-
-                    {currentWf && (
-                        <WorkflowEditor
-                            workflow={currentWf}
-                            onChange={updateWf}
-                            onAddRule={addRule}
-                            onUpdateRule={updateRule}
-                            onRemoveRule={removeRule}
-                            errors={errors}
-                        />
-                    )}
-                </div>
-            </ModalContent>
-
-            <ModalActions>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <span style={{ fontSize: 12, color: 'var(--grey-600)' }}>
-                        {form.workflows.length} {form.workflows.length === 1 ? 'workflow' : 'workflows'} ·{' '}
-                        {form.workflows.reduce((s, w) => s + w.rules.length, 0)} rules
+        <Modal
+            size="lg"
+            title={initial ? `Edit configuration — ${initial.code}` : 'New commodity configuration'}
+            subtitle={initial ? initial.name : 'Define a new commodity sync configuration'}
+            onClose={onClose}
+            footer={
+                <>
+                    <span className="hint">
+                        {form.workflows.length} {form.workflows.length === 1 ? 'workflow' : 'workflows'} ·
+                        {' '}{form.workflows.reduce((s, w) => s + w.rules.length, 0)} rules
                     </span>
-                    <ButtonStrip end>
+                    <div className="right">
                         <Button onClick={onClose} disabled={saving}>Cancel</Button>
-                        <Button primary icon={<IconSave16 />} onClick={submit} loading={saving}>
+                        <Button variant="primary" icon="save" iconColor="white" onClick={submit} loading={saving}>
                             {initial ? 'Save changes' : 'Create configuration'}
                         </Button>
-                    </ButtonStrip>
+                    </div>
+                </>
+            }
+        >
+            {Object.keys(errors).length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                    <NoticeBox variant="error" title="Some fields need your attention">
+                        <ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
+                            {Object.values(errors).map((m, i) => <li key={i}>{m}</li>)}
+                        </ul>
+                    </NoticeBox>
                 </div>
-            </ModalActions>
-        </Modal>
-    )
-}
+            )}
 
-function WorkflowEditor({ workflow, onChange, onAddRule, onUpdateRule, onRemoveRule, errors }) {
-    const dsOptions = DATA_SOURCES.map(d => ({ value: d.value, label: d.label }))
-
-    return (
-        <div style={{ paddingTop: 16 }}>
-            <div className="form-grid" style={{ marginBottom: 18 }}>
-                <InputField
-                    label="Workflow name"
-                    required
-                    value={workflow.name}
-                    onChange={({ value }) => onChange({ name: value })}
-                />
-                <SingleSelectField
-                    label="Aggregation type"
-                    required
-                    selected={workflow.aggregationType}
-                    onChange={({ selected }) => onChange({ aggregationType: selected })}
-                >
-                    <SingleSelectOption label="Sum" value="SUM" />
-                    <SingleSelectOption label="Average" value="AVERAGE" />
-                </SingleSelectField>
+            {/* ---- Section A: Basic Info ---- */}
+            <div className="form-section">
+                <h3 className="section-heading">
+                    Basic information
+                    <span className="hint">Identifiers, scheduling, and ordering cadence</span>
+                </h3>
+                <div className="form-grid">
+                    <Field label="Commodity code" required error={errors.code} help="Short identifier — letters, digits and hyphens.">
+                        <Input
+                            value={form.code}
+                            onChange={e => set({ code: e.target.value.toUpperCase() })}
+                            placeholder="e.g. 89LATY78"
+                            error={!!errors.code}
+                        />
+                    </Field>
+                    <Field label="Commodity name" required error={errors.name}>
+                        <Input
+                            value={form.name}
+                            onChange={e => set({ name: e.target.value })}
+                            placeholder="e.g. Amoxicillin 500mg capsules"
+                            error={!!errors.name}
+                        />
+                    </Field>
+                    <Field label="Commodity group" required>
+                        <Select
+                            value={form.group}
+                            onChange={e => set({ group: e.target.value })}
+                            options={groupOptions}
+                        />
+                    </Field>
+                    <Field label="Synchronization interval" required error={errors.syncInterval} help="Standard 5-field cron expression in UTC.">
+                        <Input
+                            value={form.syncInterval}
+                            onChange={e => set({ syncInterval: e.target.value })}
+                            placeholder="0 0 * * 1"
+                            error={!cron.ok}
+                            style={{ fontFamily: 'var(--font-family-mono)' }}
+                        />
+                        <div className={`cron-preview ${cron.ok ? '' : 'invalid'}`}>
+                            <Icon name={cron.ok ? 'clock' : 'error'} size={16} color={cron.ok ? 'blue' : 'red'} />
+                            <span className="label">{cron.ok ? 'Runs' : 'Invalid'}:</span>
+                            <span>{cron.text}</span>
+                        </div>
+                    </Field>
+                    <Field label="Ordering period type" required>
+                        <Select
+                            value={form.orderingPeriodType}
+                            onChange={e => set({ orderingPeriodType: e.target.value })}
+                            options={orderingOptions}
+                        />
+                    </Field>
+                    <Field label="Ordering period" required error={errors.orderingPeriod} help={`Number of ${form.orderingPeriodType.toLowerCase()}s between orders.`}>
+                        <Input
+                            type="number"
+                            value={form.orderingPeriod}
+                            onChange={e => set({ orderingPeriod: parseInt(e.target.value) || 0 })}
+                            error={!!errors.orderingPeriod}
+                        />
+                    </Field>
+                </div>
             </div>
 
-            <div style={{ marginBottom: 18 }}>
-                <p style={{ fontSize: 14, color: 'var(--grey-700)', margin: '0 0 6px', fontWeight: 500 }}>
-                    Data sources <span style={{ color: 'var(--red-700)' }}>*</span>
-                </p>
-                {errors[`wf-${workflow.id}-ds`] && (
-                    <p style={{ color: 'var(--red-700)', fontSize: 12, margin: '0 0 6px' }}>
-                        {errors[`wf-${workflow.id}-ds`]}
-                    </p>
-                )}
+            {/* ---- Section B: Recipient Groups ---- */}
+            <div className="form-section">
+                <h3 className="section-heading">
+                    Recipient groups
+                    <span className="hint">User groups that receive alerts when this configuration runs</span>
+                </h3>
+                {errors.recipientGroups && <div className="field-error" style={{ marginBottom: 8 }}>{errors.recipientGroups}</div>}
                 <Transfer
-                    options={dsOptions}
-                    selected={workflow.dataSources}
-                    onChange={({ selected }) => onChange({ dataSources: selected })}
-                    leftHeader={<span style={{ fontWeight: 500 }}>Available data sources</span>}
-                    rightHeader={<span style={{ fontWeight: 500 }}>Selected data sources</span>}
-                    filterable
-                    filterPlaceholder="Filter sources…"
-                    height="240px"
+                    value={form.recipientGroups}
+                    onChange={(v) => set({ recipientGroups: v })}
+                    options={RECIPIENT_GROUPS}
+                    leftLabel="Available groups"
+                    rightLabel="Selected groups"
                 />
             </div>
+
+            {/* ---- Section C: Workflows ---- */}
+            <div className="form-section">
+                <h3 className="section-heading">
+                    Workflows
+                    <span className="hint">Each workflow pulls one slice of data on this configuration's schedule</span>
+                </h3>
+                <div className="dhis2-tabs" style={{ marginBottom: 16 }}>
+                    {form.workflows.map(w => (
+                        <button
+                            key={w.id}
+                            type="button"
+                            className={`dhis2-tab ${activeWf === w.id ? 'active' : ''}`}
+                            onClick={() => setActiveWf(w.id)}
+                        >
+                            <Icon name="sync" size={16} color={activeWf === w.id ? 'blue' : 'muted'} />
+                            {w.name}
+                            <span className="badge">{w.rules.length}</span>
+                            {form.workflows.length > 1 && (
+                                <span
+                                    className="close"
+                                    onClick={(e) => { e.stopPropagation(); removeWorkflow(w.id); }}
+                                    title="Remove workflow"
+                                >×</span>
+                            )}
+                        </button>
+                    ))}
+                    <button
+                        type="button"
+                        className="dhis2-tab add"
+                        onClick={addWorkflow}
+                    >
+                        <Icon name="add" size={16} color="blue" />
+                        Add workflow
+                    </button>
+                </div>
+
+                {currentWf && (
+                    <WorkflowEditor
+                        workflow={currentWf}
+                        onChange={updateWf}
+                        onAddRule={addRule}
+                        onUpdateRule={updateRule}
+                        onRemoveRule={removeRule}
+                        errors={errors}
+                    />
+                )}
+            </div>
+        </Modal>
+    );
+};
+
+/* ---------- Workflow editor sub-component ---------- */
+const WorkflowEditor = ({ workflow, onChange, onAddRule, onUpdateRule, onRemoveRule, errors }) => {
+    return (
+        <div>
+            <div className="form-grid" style={{ marginBottom: 18 }}>
+                <Field label="Workflow name" required>
+                    <Input value={workflow.name} onChange={e => onChange({ name: e.target.value })} />
+                </Field>
+                <Field label="Aggregation type" required>
+                    <RadioGroup
+                        value={workflow.aggregationType}
+                        onChange={(v) => onChange({ aggregationType: v })}
+                        options={[
+                            { value: 'SUM',     label: 'Sum' },
+                            { value: 'AVERAGE', label: 'Average' },
+                        ]}
+                    />
+                </Field>
+            </div>
+
+            <Field
+                label="Data sources"
+                required
+                help="Data elements pulled by this workflow."
+                error={errors[`wf-${workflow.id}-ds`]}
+            >
+                <Transfer
+                    value={workflow.dataSources}
+                    onChange={(v) => onChange({ dataSources: v })}
+                    options={DATA_SOURCES}
+                    leftLabel="Available data sources"
+                    rightLabel="Selected data sources"
+                />
+            </Field>
 
             <div className="spacer-h" />
 
             <div className="form-grid three" style={{ marginBottom: 18 }}>
-                <InputField
-                    label="Processing ratio"
-                    type="number"
-                    helpText="0 = ignore, 1 = full weight."
-                    value={String(workflow.processingRatio)}
-                    onChange={({ value }) => onChange({ processingRatio: parseFloat(value) || 0 })}
-                    min="0"
-                    max="1"
-                    step="0.05"
-                />
-                <InputField
-                    label="Consumption conversion factor"
-                    type="number"
-                    helpText="Multiplier from reported units to base units."
-                    value={String(workflow.consumptionConversionFactor)}
-                    onChange={({ value }) => onChange({ consumptionConversionFactor: parseFloat(value) || 0 })}
-                />
-                <InputField
-                    label="Period of data"
-                    type="number"
-                    helpText={`Number of ${workflow.periodType.toLowerCase()}s to pull each run.`}
-                    value={String(workflow.periodOfData)}
-                    onChange={({ value }) => onChange({ periodOfData: parseInt(value) || 1 })}
-                />
-                <SingleSelectField
-                    label="Period type"
-                    required
-                    selected={workflow.periodType}
-                    onChange={({ selected }) => onChange({ periodType: selected })}
-                >
-                    {PERIOD_TYPES.map(o => (
-                        <SingleSelectOption key={o.value} label={o.label} value={o.value} />
-                    ))}
-                </SingleSelectField>
+                <Field label="Processing ratio" help="0 = ignore, 1 = full weight. Applied to each pulled value.">
+                    <Slider
+                        value={workflow.processingRatio}
+                        onChange={(v) => onChange({ processingRatio: v })}
+                        min={0} max={1} step={0.05}
+                        formatVal={(v) => v.toFixed(2)}
+                    />
+                </Field>
+                <Field label="Consumption conversion factor" help="Multiplier from reported units to base units.">
+                    <Input
+                        type="number"
+                        value={workflow.consumptionConversionFactor}
+                        onChange={e => onChange({ consumptionConversionFactor: parseFloat(e.target.value) || 0 })}
+                    />
+                </Field>
+                <Field label="Period of data" help={`Number of ${workflow.periodType.toLowerCase()}s to pull each run.`}>
+                    <Input
+                        type="number"
+                        value={workflow.periodOfData}
+                        onChange={e => onChange({ periodOfData: parseInt(e.target.value) || 1 })}
+                    />
+                </Field>
+                <Field label="Period type" required>
+                    <Select
+                        value={workflow.periodType}
+                        onChange={e => onChange({ periodType: e.target.value })}
+                        options={PERIOD_TYPES}
+                    />
+                </Field>
                 <div className="span-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignSelf: 'end' }}>
                     <div className="switch-row">
-                        <div className="sw-label">
+                        <div className="label">
                             Skip empty data
-                            <span className="sw-sub">Drop facility periods with no reported values.</span>
+                            <span className="sub">Drop facility periods with no reported values.</span>
                         </div>
-                        <SwitchField
-                            label=""
-                            checked={workflow.skipEmpty}
-                            onChange={({ checked }) => onChange({ skipEmpty: checked })}
-                        />
+                        <Switch on={workflow.skipEmpty} onChange={(v) => onChange({ skipEmpty: v })} />
                     </div>
                     <div className="switch-row">
-                        <div className="sw-label">
+                        <div className="label">
                             Remove &amp; complement empty data
-                            <span className="sw-sub">Fill gaps with zero values during aggregation.</span>
+                            <span className="sub">Fill gaps with zero values during aggregation.</span>
                         </div>
-                        <SwitchField
-                            label=""
-                            checked={workflow.removeAndComplement}
-                            onChange={({ checked }) => onChange({ removeAndComplement: checked })}
-                        />
+                        <Switch on={workflow.removeAndComplement} onChange={(v) => onChange({ removeAndComplement: v })} />
                     </div>
                 </div>
             </div>
 
-            {/* ── Rules ── */}
+            {/* Rules */}
             <h3 className="section-heading" style={{ marginTop: 20 }}>
                 Rules
-                <span className="hint">Filter which org units this workflow runs against</span>
+                <span className="hint">Filter which org units this workflow runs against, by dataset assignment</span>
             </h3>
 
             {workflow.rules.length === 0 && (
@@ -443,42 +376,34 @@ function WorkflowEditor({ workflow, onChange, onAddRule, onUpdateRule, onRemoveR
             {workflow.rules.map((r, idx) => (
                 <div key={r.id} className="rule-card">
                     <div className="rule-card-head">
-                        <span className="rule-title">Rule {idx + 1}</span>
-                        <Button destructive small icon={<IconDelete16 />} onClick={() => onRemoveRule(r.id)}>
+                        <span className="title">Rule {idx + 1}</span>
+                        <Button size="small" variant="destructive" icon="delete" iconColor="white" onClick={() => onRemoveRule(r.id)}>
                             Remove rule
                         </Button>
                     </div>
                     <div className="form-grid">
-                        <SingleSelectField
-                            label="Rule type"
-                            required
-                            selected={r.type}
-                            onChange={({ selected }) => onUpdateRule(r.id, { type: selected })}
-                        >
-                            {RULE_TYPES.map(o => (
-                                <SingleSelectOption key={o.value} label={o.label} value={o.value} />
-                            ))}
-                        </SingleSelectField>
-                        <MultiSelectField
-                            label="Datasets"
-                            required
-                            helpText="Org units assigned to (or excluded from) these datasets."
-                            selected={r.datasets}
-                            onChange={({ selected }) => onUpdateRule(r.id, { datasets: selected })}
-                            placeholder="Pick datasets…"
-                            filterable
-                        >
-                            {DATASETS.map(d => (
-                                <MultiSelectOption key={d.value} label={d.label} value={d.value} />
-                            ))}
-                        </MultiSelectField>
+                        <Field label="Rule type" required>
+                            <Select
+                                value={r.type}
+                                onChange={e => onUpdateRule(r.id, { type: e.target.value })}
+                                options={RULE_TYPES}
+                            />
+                        </Field>
+                        <Field label="Datasets" required help="Org units assigned to (or excluded from) these datasets.">
+                            <MultiSelect
+                                value={r.datasets}
+                                onChange={(v) => onUpdateRule(r.id, { datasets: v })}
+                                options={DATASETS}
+                                placeholder="Pick datasets…"
+                            />
+                        </Field>
                     </div>
                 </div>
             ))}
 
-            <Button icon={<IconAdd16 />} onClick={onAddRule} style={{ marginTop: 4 }}>
-                Add rule
-            </Button>
+            <Button icon="add" onClick={onAddRule} style={{ marginTop: 4 }}>Add rule</Button>
         </div>
-    )
-}
+    );
+};
+
+window.CommodityForm = CommodityForm;

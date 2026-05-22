@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Commodity Control — DHIS2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="app.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="Atoms.jsx"></script>
+<script type="text/babel" src="Shell.jsx"></script>
+<script type="text/babel" src="CommodityList.jsx"></script>
+<script type="text/babel" src="CommodityForm.jsx"></script>
+<script type="text/babel" src="Distribution.jsx"></script>
+<script type="text/babel" src="TransactionLogs.jsx"></script>
+<script type="text/babel" src="ManualResend.jsx"></script>
+<script type="text/babel" src="Reports.jsx"></script>
+
+<script type="text/babel" data-screen-label="Commodity Control">
+const App = () => {
+    const [screen, setScreen] = React.useState('commodities');
+
+    /* ---- state ---- */
+    const [commodities, setCommodities] = React.useState(SEED_COMMODITIES);
+    const [distributions, setDistributions] = React.useState(SEED_DISTRIBUTIONS);
+    const [logs, setLogs] = React.useState(SEED_LOGS);
+    const [resends, setResends] = React.useState(SEED_RESENDS);
+
+    /* ---- modal state ---- */
+    const [editingCommodity, setEditingCommodity] = React.useState(null); // null = none, {} = new, obj = edit
+    const [editingDistribution, setEditingDistribution] = React.useState(null);
+    const [viewingLog, setViewingLog] = React.useState(null);
+    const [confirm, setConfirm] = React.useState(null);
+
+    /* ---- alerts (toast stack) ---- */
+    const [alerts, setAlerts] = React.useState([]);
+    const pushAlert = (variant, message, action) => {
+        const id = newId('a');
+        setAlerts(a => [...a, { id, variant, message, action }]);
+        setTimeout(() => setAlerts(a => a.filter(x => x.id !== id)), 4500);
+    };
+    const dismissAlert = (id) => setAlerts(a => a.filter(x => x.id !== id));
+
+    /* ---- commodity handlers ---- */
+    const handleSaveCommodity = (c) => {
+        if (c.id) {
+            setCommodities(arr => arr.map(x => x.id === c.id ? c : x));
+            pushAlert('success', `Configuration "${c.name}" was updated.`);
+        } else {
+            const nc = { ...c, id: newId('cf') };
+            setCommodities(arr => [nc, ...arr]);
+            pushAlert('success', `Configuration "${nc.name}" was created.`);
+        }
+        setEditingCommodity(null);
+    };
+
+    const handleDeleteCommodity = (c) => {
+        setConfirm({
+            title: 'Delete commodity configuration?',
+            message: <>
+                You're about to delete <strong>{c.name}</strong> ({c.code}).
+                This will also remove it from any distributions it belongs to. This action can't be undone.
+            </>,
+            confirmLabel: 'Delete configuration',
+            variant: 'destructive',
+            icon: 'delete',
+            onConfirm: () => {
+                setCommodities(arr => arr.filter(x => x.id !== c.id));
+                setDistributions(arr => arr.map(d => ({
+                    ...d, configurations: d.configurations.filter(id => id !== c.id),
+                })));
+                pushAlert('success', `Configuration "${c.name}" was deleted.`, {
+                    label: 'Undo',
+                    onClick: () => {
+                        setCommodities(arr => [c, ...arr]);
+                        pushAlert('info', 'Deletion undone.');
+                    },
+                });
+                setConfirm(null);
+            },
+            onCancel: () => setConfirm(null),
+        });
+    };
+
+    const handleToggleActive = (c) => {
+        setConfirm({
+            title: c.active ? 'Deactivate configuration?' : 'Activate configuration?',
+            message: c.active
+                ? <>Deactivating <strong>{c.name}</strong> will stop scheduled sync runs for this commodity until it's re-activated. Any in-progress run will complete normally.</>
+                : <>Activating <strong>{c.name}</strong> will resume scheduled sync runs on the next cron tick (<code>{c.syncInterval}</code>).</>,
+            confirmLabel: c.active ? 'Deactivate' : 'Activate',
+            variant: c.active ? 'destructive' : 'primary',
+            icon: c.active ? 'lock' : 'checkmark',
+            onConfirm: () => {
+                setCommodities(arr => arr.map(x => x.id === c.id ? { ...x, active: !x.active } : x));
+                pushAlert('success', `Configuration "${c.name}" is now ${c.active ? 'inactive' : 'active'}.`);
+                setConfirm(null);
+            },
+            onCancel: () => setConfirm(null),
+        });
+    };
+
+    /* ---- distribution handlers ---- */
+    const handleSaveDistribution = (d) => {
+        const exists = distributions.find(x => x.id === d.id);
+        if (exists) {
+            setDistributions(arr => arr.map(x => x.id === d.id ? d : x));
+            pushAlert('success', `Distribution "${d.name}" was updated.`);
+        } else {
+            setDistributions(arr => [d, ...arr]);
+            pushAlert('success', `Distribution "${d.name}" was created.`);
+        }
+        setEditingDistribution(null);
+    };
+
+    const handleDeleteDistribution = (d) => {
+        setConfirm({
+            title: 'Delete distribution?',
+            message: <>
+                You're about to delete <strong>{d.name}</strong>.
+                The linked commodity configurations will remain — only the grouping is removed.
+            </>,
+            confirmLabel: 'Delete distribution',
+            variant: 'destructive',
+            icon: 'delete',
+            onConfirm: () => {
+                setDistributions(arr => arr.filter(x => x.id !== d.id));
+                pushAlert('success', `Distribution "${d.name}" was deleted.`);
+                setConfirm(null);
+            },
+            onCancel: () => setConfirm(null),
+        });
+    };
+
+    /* ---- manual data resend ---- */
+    const handleResend = ({ configurationIds, period, reason, estimatedRecords }) => {
+        const monthName = ['January','February','March','April','May','June','July','August','September','October','November','December'][period.month];
+        // simulate a partial outcome on the first run, just to show realistic UI
+        const success = Math.round(estimatedRecords * (0.92 + Math.random() * 0.08));
+        const failed = estimatedRecords - success;
+        const status = failed === 0 ? 'SUCCESS' : (success === 0 ? 'FAILED' : 'PARTIAL');
+
+        const entry = {
+            id: newId('rs'),
+            date: new Date().toISOString(),
+            period,
+            configurationIds,
+            status,
+            records: estimatedRecords,
+            triggeredBy: 'fkoroma@moh.gov.sl',
+            reason,
+        };
+        setResends(arr => [entry, ...arr]);
+
+        // append a matching entry to transaction logs for each configuration
+        const newLogs = configurationIds.map(cid => ({
+            id: newId('tx'),
+            date: entry.date,
+            status,
+            dataLink: `https://hmis.example.org/api/dataValueSets?period=${period.year}${String(period.month + 1).padStart(2, '0')}&config=${cid}`,
+            configurationId: cid,
+            stats: {
+                total: Math.round(estimatedRecords / configurationIds.length),
+                success: Math.round(success / configurationIds.length),
+                failed:  Math.round(failed / configurationIds.length),
+            },
+            durationMs: 3200 + Math.round(Math.random() * 8000),
+            triggeredBy: `Manual resend — fkoroma@moh.gov.sl`,
+        }));
+        setLogs(arr => [...newLogs, ...arr]);
+
+        if (status === 'SUCCESS') {
+            pushAlert('success', `Resend complete — ${estimatedRecords.toLocaleString()} records for ${monthName} ${period.year}.`);
+        } else if (status === 'PARTIAL') {
+            pushAlert('warning', `Resend completed with ${failed.toLocaleString()} failures for ${monthName} ${period.year}.`);
+        } else {
+            pushAlert('error', `Resend failed for ${monthName} ${period.year}.`);
+        }
+    };
+
+    const appTitle = {
+        commodities: 'Commodity configurations',
+        distributions: 'Distribution configurations',
+        logs: 'Transaction logs',
+        resend: 'Manual data resend',
+        'report-matrix': 'Commodity configuration matrix',
+        'report-transfer': 'Data transfer status',
+    }[screen] || 'Commodity Control';
+
+    return (
+        <div className="app">
+            <HeaderBar appName="Commodity Control" instance="Ministry of Health, Sierra Leone · v2.3.1" />
+            <div className="app-body">
+                <Sidebar
+                    active={screen}
+                    onSelect={setScreen}
+                    badges={{
+                        commodities: commodities.length,
+                        distributions: distributions.length,
+                        logs: logs.length,
+                    }}
+                />
+                <main className="main">
+                    {screen === 'commodities' && (
+                        <CommodityList
+                            items={commodities}
+                            onAdd={() => setEditingCommodity({ isNew: true })}
+                            onEdit={(c) => setEditingCommodity(c)}
+                            onView={(c) => setEditingCommodity(c)}
+                            onDelete={handleDeleteCommodity}
+                            onToggleActive={handleToggleActive}
+                        />
+                    )}
+                    {screen === 'distributions' && (
+                        <DistributionList
+                            items={distributions}
+                            commodities={commodities}
+                            onAdd={() => setEditingDistribution({ isNew: true })}
+                            onEdit={(d) => setEditingDistribution(d)}
+                            onDelete={handleDeleteDistribution}
+                        />
+                    )}
+                    {screen === 'logs' && (
+                        <TransactionLogs
+                            logs={logs}
+                            commodities={commodities}
+                            onView={(l) => setViewingLog(l)}
+                        />
+                    )}
+                    {screen === 'resend' && (
+                        <ManualResend
+                            commodities={commodities}
+                            recentResends={resends}
+                            onResend={handleResend}
+                        />
+                    )}
+                    {screen === 'report-matrix' && (
+                        <ConfigurationMatrixReport
+                            commodities={commodities}
+                            distributions={distributions}
+                        />
+                    )}
+                    {screen === 'report-transfer' && (
+                        <DataTransferReport commodities={commodities} />
+                    )}
+                </main>
+            </div>
+
+            {/* ---- Modals ---- */}
+            {editingCommodity && (
+                <CommodityForm
+                    initial={editingCommodity.isNew ? null : editingCommodity}
+                    onClose={() => setEditingCommodity(null)}
+                    onSave={handleSaveCommodity}
+                />
+            )}
+            {editingDistribution && (
+                <DistributionForm
+                    initial={editingDistribution.isNew ? null : editingDistribution}
+                    commodities={commodities}
+                    onClose={() => setEditingDistribution(null)}
+                    onSave={handleSaveDistribution}
+                />
+            )}
+            {viewingLog && (
+                <TransactionLogDetail
+                    log={viewingLog}
+                    commodities={commodities}
+                    onClose={() => setViewingLog(null)}
+                />
+            )}
+            {confirm && <ConfirmModal {...confirm} />}
+
+            {/* ---- Alert stack ---- */}
+            <div className="alert-stack">
+                {alerts.map(a => (
+                    <AlertBar
+                        key={a.id}
+                        variant={a.variant}
+                        action={a.action}
+                        onClose={() => dismissAlert(a.id)}
+                    >{a.message}</AlertBar>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

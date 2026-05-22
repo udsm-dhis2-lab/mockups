@@ -1,0 +1,319 @@
+/* =============================================================================
+ * DHIS2 Design System — Color & Type Tokens
+ *
+ * Mirrors @dhis2/ui-constants (colors, theme, spacers, elevations).
+ * Source: ui/constants/src/{colors,theme,spacers,elevations}.js
+ *
+ * Usage:
+ *   <link rel="stylesheet" href="colors_and_type.css">
+ *   color: var(--fg-default);
+ *   font: var(--text-body);
+ * ============================================================================= */
+
+/* Roboto — DHIS2's only typeface */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+:root {
+    /* ---------------------------------------------------------------------- */
+    /* Color scale — full palette (10 stops per hue: 050 → 900)               */
+    /* ---------------------------------------------------------------------- */
+
+    /* Blue (primary) */
+    --blue-050: #f5fbff;
+    --blue-100: #e3f2fd;
+    --blue-200: #c5e3fc;
+    --blue-300: #90caf9;
+    --blue-400: #42a5f5;
+    --blue-500: #2196f3;
+    --blue-600: #147cd7;
+    --blue-700: #1565c0;
+    --blue-800: #0d47a1;
+    --blue-900: #093371;
+
+    /* Teal (secondary) */
+    --teal-050: #f1f9f9;
+    --teal-100: #e0f2f1;
+    --teal-200: #b2dfdb;
+    --teal-300: #4db6ac;
+    --teal-400: #009688;
+    --teal-500: #00897b;
+    --teal-600: #00796b;
+    --teal-700: #00695c;
+    --teal-800: #004d40;
+    --teal-900: #00332b;
+
+    /* Red (negative / destructive) */
+    --red-050: #fff5f6;
+    --red-100: #ffe5e8;
+    --red-200: #ffcdd2;
+    --red-300: #e57373;
+    --red-400: #f44336;
+    --red-500: #d32f2f;
+    --red-600: #c62828;
+    --red-700: #b71c1c;
+    --red-800: #891515;
+    --red-900: #330202;
+
+    /* Yellow (warning) */
+    --yellow-050: #fff8e1;
+    --yellow-100: #ffecb3;
+    --yellow-200: #ffe082;
+    --yellow-300: #ffc324;
+    --yellow-400: #ffa902;
+    --yellow-500: #ff9302;
+    --yellow-600: #ff8302;
+    --yellow-700: #e56408;
+    --yellow-800: #bb460d;
+    --yellow-900: #6f3205;
+
+    /* Green (positive / success) */
+    --green-050: #f4fbf4;
+    --green-100: #e8f5e9;
+    --green-200: #c8e6c9;
+    --green-300: #a5d6a7;
+    --green-400: #4caf50;
+    --green-500: #43a047;
+    --green-600: #388e3c;
+    --green-700: #2e7d32;
+    --green-800: #1b5e20;
+    --green-900: #103713;
+
+    /* Grey (neutrals — the workhorse of every DHIS2 surface) */
+    --grey-050: #fbfcfd;
+    --grey-100: #f8f9fa;
+    --grey-200: #f3f5f7;
+    --grey-300: #e8edf2;
+    --grey-400: #d5dde5;
+    --grey-500: #a0adba;
+    --grey-600: #6c7787;
+    --grey-700: #4a5768;
+    --grey-800: #404b5a;
+    --grey-900: #212934;
+
+    --white: #ffffff;
+
+    /* ---------------------------------------------------------------------- */
+    /* Theme aliases (semantic — match @dhis2/ui-constants/theme)             */
+    /* ---------------------------------------------------------------------- */
+    --primary-050: var(--blue-050);
+    --primary-100: var(--blue-100);
+    --primary-200: var(--blue-200);
+    --primary-300: var(--blue-300);
+    --primary-400: var(--blue-400);
+    --primary-500: var(--blue-500);
+    --primary-600: var(--blue-600);
+    --primary-700: var(--blue-700);
+    --primary-800: var(--blue-800);
+    --primary-900: var(--blue-900);
+
+    --secondary-050: var(--teal-050);
+    --secondary-600: var(--teal-600);
+    --secondary-700: var(--teal-700);
+    --secondary-800: var(--teal-800);
+
+    --status-default: var(--grey-700);
+    --status-error: var(--red-500);
+    --status-valid: var(--blue-600);
+    --status-warning: var(--yellow-500);
+    --status-disabled: var(--grey-600);
+    --status-focus: var(--blue-600);
+
+    /* ---------------------------------------------------------------------- */
+    /* Semantic foreground / background / border                              */
+    /* ---------------------------------------------------------------------- */
+    --fg-default: var(--grey-900);          /* primary body text */
+    --fg-muted: var(--grey-700);            /* secondary text */
+    --fg-subtle: var(--grey-600);           /* tertiary / placeholders / icons */
+    --fg-disabled: var(--grey-500);
+    --fg-on-primary: var(--white);
+    --fg-link: var(--blue-700);
+
+    --bg-canvas: var(--grey-100);           /* app background */
+    --bg-surface: var(--white);             /* cards, sheets */
+    --bg-sunken: var(--grey-200);           /* sub-areas, table headers */
+    --bg-hover: var(--grey-200);
+    --bg-pressed: var(--grey-300);
+    --bg-selected: var(--blue-050);
+
+    --border-default: var(--grey-400);
+    --border-strong: var(--grey-500);
+    --border-subtle: var(--grey-300);
+
+    /* The header-bar's hardcoded blue — used across every DHIS2 app shell */
+    --header-bar-bg: #2c6693;
+
+    /* ---------------------------------------------------------------------- */
+    /* Spacers — the "dp" scale (4-based, density-pixel naming)               */
+    /* ---------------------------------------------------------------------- */
+    --dp-4: 4px;
+    --dp-8: 8px;
+    --dp-12: 12px;
+    --dp-16: 16px;
+    --dp-24: 24px;
+    --dp-32: 32px;
+    --dp-48: 48px;
+    --dp-64: 64px;
+    --dp-96: 96px;
+    --dp-128: 128px;
+    --dp-192: 192px;
+    --dp-256: 256px;
+    --dp-384: 384px;
+    --dp-512: 512px;
+    --dp-640: 640px;
+
+    /* ---------------------------------------------------------------------- */
+    /* Elevation                                                              */
+    /* ---------------------------------------------------------------------- */
+    --elevation-e100: 0px 1px 2px rgba(33, 41, 52, 0.06),
+                      0px 1px 3px rgba(33, 41, 52, 0.1);
+    --elevation-e200: 0px 0px 1px rgba(33, 41, 52, 0.1),
+                      0px 4px 6px -1px rgba(33, 41, 52, 0.1),
+                      0px 2px 4px -1px rgba(33, 41, 52, 0.06);
+    --elevation-e300: 0px 10px 15px -3px rgba(33, 41, 52, 0.1),
+                      0px 4px 6px -2px rgba(33, 41, 52, 0.05);
+    --elevation-e400: 0px 25px 50px -12px rgba(33, 41, 52, 0.25);
+    --elevation-popover: 0 4px 12px rgba(12, 14, 16, 0.15),
+                         0 0 0 1px rgba(12, 14, 16, 0.05);
+
+    /* ---------------------------------------------------------------------- */
+    /* Radii — DHIS2 components use only two values                           */
+    /* ---------------------------------------------------------------------- */
+    --radius-sm: 3px;      /* inputs, cards, notice-boxes, tags  */
+    --radius-md: 4px;      /* buttons */
+    --radius-pill: 16px;   /* chips */
+    --radius-circle: 50%;
+
+    /* ---------------------------------------------------------------------- */
+    /* Z-layers                                                               */
+    /* ---------------------------------------------------------------------- */
+    --layer-application-top: 2000;
+    --layer-blocking: 3000;
+    --layer-alert: 9999;
+
+    /* ---------------------------------------------------------------------- */
+    /* Typography — Roboto, the only DHIS2 typeface                           */
+    /* ---------------------------------------------------------------------- */
+    --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-family-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+}
+
+/* =============================================================================
+ * Element defaults
+ * ============================================================================= */
+
+html, body {
+    font-family: var(--font-family);
+    color: var(--fg-default);
+    background: var(--bg-canvas);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* DHIS2 has no formal "h1/h2/h3 scale" exported as constants — these values
+ * are distilled from header-bar, menu-section-header, page titles, and form
+ * fields seen across the component library. */
+
+h1, .text-h1 {
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-light);  /* DHIS2 prefers light for display */
+    font-size: 28px;
+    line-height: 34px;
+    letter-spacing: 0;
+    color: var(--fg-default);
+    margin: 0;
+}
+
+h2, .text-h2 {
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-regular);
+    font-size: 22px;
+    line-height: 28px;
+    color: var(--fg-default);
+    margin: 0;
+}
+
+h3, .text-h3 {
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-medium);
+    font-size: 17px;
+    line-height: 22px;
+    color: var(--fg-default);
+    margin: 0;
+}
+
+h4, .text-h4 {
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-medium);
+    font-size: 14px;
+    line-height: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--fg-muted);
+    margin: 0;
+}
+
+p, .text-body {
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-regular);
+    font-size: 14px;
+    line-height: 19px;
+    color: var(--fg-default);
+}
+
+.text-body-lg {
+    font-size: 16px;
+    line-height: 22px;
+}
+
+.text-small {
+    font-size: 13px;
+    line-height: 17px;
+    color: var(--fg-muted);
+}
+
+.text-caption {
+    font-size: 12px;
+    line-height: 15px;
+    color: var(--fg-subtle);
+}
+
+/* Component-class text styles — match values lifted from button/input/etc. */
+.text-button {
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-regular);
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0.5px;
+}
+
+.text-button-primary {
+    font-weight: var(--font-weight-medium);
+}
+
+.text-input {
+    font-family: var(--font-family);
+    font-size: 14px;
+    line-height: 16px;
+    color: var(--fg-default);
+}
+
+.text-label {
+    font-size: 14px;
+    line-height: 18px;
+    color: var(--fg-muted);
+}
+
+.text-tag {
+    font-size: 13px;
+    line-height: 16px;
+}
+
+.text-mono, code, kbd, pre, samp {
+    font-family: var(--font-family-mono);
+    font-size: 13px;
+}
