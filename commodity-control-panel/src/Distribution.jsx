@@ -1,4 +1,7 @@
 /* DistributionList — distribution configurations list view + create/edit modal */
+import React from 'react';
+import { Button, Input, Icon, Modal, Card, Field, Transfer } from './Atoms.jsx';
+import { newId } from './data.jsx';
 
 const DistributionList = ({ items, commodities, onAdd, onEdit, onDelete }) => {
     const [q, setQ] = React.useState('');

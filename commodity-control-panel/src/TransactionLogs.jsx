@@ -1,4 +1,6 @@
 /* TransactionLogs — list view of transaction logs with filter, pagination, and detail modal */
+import React from 'react';
+import { Button, Tag, Modal, Input, Icon, Pagination, NoticeBox } from './Atoms.jsx';
 
 const STATUS_TAG = (status) => {
     if (status === 'SUCCESS') return <Tag variant="positive" bold>SUCCESS</Tag>;

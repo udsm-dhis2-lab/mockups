@@ -1,4 +1,6 @@
 /* AppHeader — top app shell. 48px, --header-bar-bg, white logo + text. */
+import React from 'react';
+import { Icon } from './Atoms.jsx';
 
 const AppHeader = ({ appName, instance }) => (
     <header className="hb">

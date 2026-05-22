@@ -14,14 +14,13 @@ import CommodityList from './CommodityList.jsx'
 import CommodityForm from './CommodityForm.jsx'
 import { DistributionList, DistributionForm } from './Distribution.jsx'
 import { TransactionLogs, TransactionLogDetail } from './TransactionLogs.jsx'
-import ManualResend from './ManualResend.jsx'
+import ManualResend, { SEED_RESENDS } from './ManualResend.jsx'
 import {
     SEED_COMMODITIES,
     SEED_DISTRIBUTIONS,
     SEED_LOGS,
-    SEED_RESENDS,
     newId,
-} from './data.js'
+} from './data.jsx'
 
 function ConfirmModal({ title, body, danger, onConfirm, onClose }) {
     return (
@@ -116,11 +115,17 @@ export default function App() {
         addAlert(`Resend queued — ${estimatedRecords.toLocaleString()} est. records`, 'success')
     }
 
+    const badges = {
+        commodities: commodities.length,
+        distributions: distributions.length,
+        logs: logs.length,
+    };
+
     return (
         <div className="app">
             <AppHeader appName="Commodity Control" instance="HMIS Sierra Leone" />
             <div className="app-body">
-                <Sidebar active={screen} onSelect={setScreen} />
+                <Sidebar active={screen} onSelect={setScreen} badges={badges} />
                 <main className="main">
                     {screen === 'commodities' && (
                         <CommodityList

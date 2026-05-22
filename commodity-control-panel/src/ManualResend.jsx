@@ -1,5 +1,7 @@
 /* ManualResend — operator UI for re-pushing a specific reporting period's
  * data to the LMIS backend. Pared back to the period picker only. */
+import React from 'react';
+import { Button, Card, Select } from './Atoms.jsx';
 
 const monthName = (m) => ['January','February','March','April','May','June','July','August','September','October','November','December'][m];
 const monthShort = (m) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m];
@@ -118,4 +120,5 @@ function quickPickMonths(today) {
 }
 
 export default ManualResend;
+export { SEED_RESENDS };
 Object.assign(window, { ManualResend, SEED_RESENDS });

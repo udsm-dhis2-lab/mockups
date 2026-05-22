@@ -452,6 +452,7 @@ const Pagination = ({ page, totalPages, pageSize, total, onPage, onPageSize }) =
     );
 };
 
+export { Icon, Button, Tag, NoticeBox, Card, Input, Select, Field, Checkbox, Switch, RadioGroup, Slider, MultiSelect, Transfer, Modal, AlertBar, Pagination };
 Object.assign(window, {
     Icon, Button, Tag, NoticeBox, Card, Input, Select, Field, Checkbox, Switch,
     RadioGroup, Slider, MultiSelect, Transfer, Modal, AlertBar, Pagination,

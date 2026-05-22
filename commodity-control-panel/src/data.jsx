@@ -460,6 +460,13 @@ Object.assign(window, {
 });
 
 /* ---- Existing exports ---- */
+export {
+    COMMODITY_GROUPS, PERIOD_TYPES, ORDERING_PERIODS, RULE_TYPES,
+    RECIPIENT_GROUPS, DATA_SOURCES, DATASETS,
+    SEED_COMMODITIES, SEED_DISTRIBUTIONS, SEED_LOGS,
+    describeCron, formatDate, formatDuration, newId, commodityCodeFor,
+    FACILITIES, buildTransferStatusRows,
+};
 Object.assign(window, {
     COMMODITY_GROUPS, PERIOD_TYPES, ORDERING_PERIODS, RULE_TYPES,
     RECIPIENT_GROUPS, DATA_SOURCES, DATASETS,

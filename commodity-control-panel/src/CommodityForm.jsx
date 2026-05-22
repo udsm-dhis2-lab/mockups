@@ -1,5 +1,8 @@
 /* CommodityForm — create/edit commodity configuration modal.
  * Sections: Basic Info, Recipient Groups, Workflows (tabbed, each with rules). */
+import React from 'react';
+import { Button, Input, Select, Field, Card, Icon, Modal, RadioGroup, NoticeBox, Checkbox, Transfer } from './Atoms.jsx';
+import { newId, RECIPIENT_GROUPS, DATASETS, describeCron } from './data.jsx';
 
 const emptyWorkflow = (idx = 1) => ({
     id: newId('w'),
