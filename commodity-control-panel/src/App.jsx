@@ -15,6 +15,7 @@ import CommodityForm from './CommodityForm.jsx'
 import { DistributionList, DistributionForm } from './Distribution.jsx'
 import { TransactionLogs, TransactionLogDetail } from './TransactionLogs.jsx'
 import ManualResend, { SEED_RESENDS } from './ManualResend.jsx'
+import { ConfigurationMatrixReport, DataTransferReport } from './Reports.jsx'
 import {
     SEED_COMMODITIES,
     SEED_DISTRIBUTIONS,
@@ -175,6 +176,19 @@ export default function App() {
                             commodities={commodities}
                             recentResends={resends}
                             onResend={handleResend}
+                        />
+                    )}
+
+                    {screen === 'report-matrix' && (
+                        <ConfigurationMatrixReport
+                            commodities={commodities}
+                            distributions={distributions}
+                        />
+                    )}
+
+                    {screen === 'report-transfer' && (
+                        <DataTransferReport
+                            commodities={commodities}
                         />
                     )}
                 </main>
