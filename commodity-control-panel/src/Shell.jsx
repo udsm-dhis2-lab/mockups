@@ -1,6 +1,6 @@
-/* HeaderBar — top app shell. 48px, --header-bar-bg, white logo + text. */
+/* AppHeader — top app shell. 48px, --header-bar-bg, white logo + text. */
 
-const HeaderBar = ({ appName, instance }) => (
+const AppHeader = ({ appName, instance }) => (
     <header className="hb">
         <img src="assets/logo-icon.svg" alt="DHIS2" className="hb-logo" />
         <div className="hb-sep" />
@@ -69,4 +69,5 @@ const Sidebar = ({ active, onSelect, badges }) => {
     );
 };
 
-Object.assign(window, { HeaderBar, Sidebar });
+export { AppHeader, Sidebar };
+Object.assign(window, { AppHeader, Sidebar });

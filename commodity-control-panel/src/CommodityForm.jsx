@@ -406,4 +406,5 @@ const WorkflowEditor = ({ workflow, onChange, onAddRule, onUpdateRule, onRemoveR
     );
 };
 
+export default CommodityForm;
 window.CommodityForm = CommodityForm;

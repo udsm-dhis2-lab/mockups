@@ -222,4 +222,5 @@ const TransactionLogDetail = ({ log, commodities, onClose }) => {
     );
 };
 
+export { TransactionLogs, TransactionLogDetail };
 Object.assign(window, { TransactionLogs, TransactionLogDetail });

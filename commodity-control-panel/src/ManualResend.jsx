@@ -117,4 +117,5 @@ function quickPickMonths(today) {
     return out;
 }
 
+export default ManualResend;
 Object.assign(window, { ManualResend, SEED_RESENDS });

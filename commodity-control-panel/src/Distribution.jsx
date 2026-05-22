@@ -177,4 +177,5 @@ const DistributionForm = ({ initial, commodities, onClose, onSave }) => {
     );
 };
 
+export { DistributionList, DistributionForm };
 Object.assign(window, { DistributionList, DistributionForm });

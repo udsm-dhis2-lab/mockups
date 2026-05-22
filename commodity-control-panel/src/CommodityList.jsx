@@ -159,4 +159,5 @@ const CommodityList = ({ items, onAdd, onEdit, onToggleActive, onDelete, onView 
     );
 };
 
+export default CommodityList;
 window.CommodityList = CommodityList;
